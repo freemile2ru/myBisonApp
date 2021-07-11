@@ -2,7 +2,9 @@ import gql from 'graphql-tag';
 import * as ApolloReactCommon from '@apollo/client';
 import * as ApolloReactHooks from '@apollo/client';
 export type Maybe<T> = T | null;
-export type Exact<T extends { [key: string]: any }> = { [K in keyof T]: T[K] };
+export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: string;
@@ -10,14 +12,16 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  /**
-   * A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the
-   * `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO
-   * 8601 standard for representation of dates and times using the Gregorian calendar.
-   */
+  /** A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar. */
   DateTime: any;
-  /** The `JSON` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
-  Json: any;
+  /** A field whose value conforms to the standard internet email address format as specified in RFC822: https://www.w3.org/Protocols/rfc822/. */
+  EmailAddress: any;
+  /** The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
+  JSONObject: any;
+  /** A field whose value conforms to the standard E.164 format as specified in: https://en.wikipedia.org/wiki/E.164. Basically this is +17895551234. */
+  PhoneNumber: any;
+  /** A field whose value conforms to the standard URL format as specified in RFC3986: https://www.ietf.org/rfc/rfc3986.txt. */
+  URL: any;
 };
 
 /** Payload returned if login or signup is successful */
@@ -29,28 +33,17 @@ export type AuthPayload = {
   user?: Maybe<User>;
 };
 
-export type DateTimeFilter = {
-  equals?: Maybe<Scalars['DateTime']>;
-  gt?: Maybe<Scalars['DateTime']>;
-  gte?: Maybe<Scalars['DateTime']>;
-  in?: Maybe<Array<Scalars['DateTime']>>;
-  lt?: Maybe<Scalars['DateTime']>;
-  lte?: Maybe<Scalars['DateTime']>;
-  not?: Maybe<Scalars['DateTime']>;
-  notIn?: Maybe<Array<Scalars['DateTime']>>;
-};
-
 export type Mutation = {
   __typename?: 'Mutation';
-  createUser: User;
+  createOrganization: Organization;
   /** Login to an existing account */
   login?: Maybe<AuthPayload>;
   /** Signup for an account */
   signup?: Maybe<AuthPayload>;
 };
 
-export type MutationCreateUserArgs = {
-  data: UserCreateInput;
+export type MutationCreateOrganizationArgs = {
+  data: OrganizationCreateInput;
 };
 
 export type MutationLoginArgs = {
@@ -62,10 +55,21 @@ export type MutationSignupArgs = {
   data: SignupInput;
 };
 
-export enum OrderByArg {
-  ASC = 'asc',
-  DESC = 'desc',
-}
+/** A Organization */
+export type Organization = {
+  __typename?: 'Organization';
+  createdAt: Scalars['DateTime'];
+  id: Scalars['ID'];
+  name: Scalars['String'];
+  updatedAt: Scalars['DateTime'];
+};
+
+export type OrganizationCreateInput = {
+  createdAt?: Maybe<Scalars['DateTime']>;
+  id?: Maybe<Scalars['String']>;
+  name: Scalars['String'];
+  updatedAt?: Maybe<Scalars['DateTime']>;
+};
 
 /** A User Profile */
 export type Profile = {
@@ -74,61 +78,16 @@ export type Profile = {
   firstName: Scalars['String'];
   /** The first and last name of a user */
   fullName?: Maybe<Scalars['String']>;
-  id: Scalars['String'];
+  id: Scalars['ID'];
   lastName: Scalars['String'];
   updatedAt: Scalars['DateTime'];
   user: User;
-};
-
-export type ProfileCreateOneWithoutUserInput = {
-  connect?: Maybe<ProfileWhereUniqueInput>;
-  create?: Maybe<ProfileCreateWithoutUserInput>;
-};
-
-export type ProfileCreateWithoutUserInput = {
-  createdAt?: Maybe<Scalars['DateTime']>;
-  firstName: Scalars['String'];
-  id?: Maybe<Scalars['String']>;
-  lastName: Scalars['String'];
-  updatedAt?: Maybe<Scalars['DateTime']>;
-};
-
-export type ProfileWhereInput = {
-  AND?: Maybe<Array<ProfileWhereInput>>;
-  createdAt?: Maybe<DateTimeFilter>;
-  firstName?: Maybe<StringFilter>;
-  id?: Maybe<StringFilter>;
-  lastName?: Maybe<StringFilter>;
-  NOT?: Maybe<Array<ProfileWhereInput>>;
-  OR?: Maybe<Array<ProfileWhereInput>>;
-  updatedAt?: Maybe<DateTimeFilter>;
-  user?: Maybe<UserWhereInput>;
-  userId?: Maybe<StringFilter>;
-};
-
-export type ProfileWhereUniqueInput = {
-  id?: Maybe<Scalars['String']>;
 };
 
 export type Query = {
   __typename?: 'Query';
   /** Returns the currently logged in user */
   me?: Maybe<User>;
-  user?: Maybe<User>;
-  users: Array<User>;
-};
-
-export type QueryUserArgs = {
-  where: UserWhereUniqueInput;
-};
-
-export type QueryUsersArgs = {
-  after?: Maybe<UserWhereUniqueInput>;
-  before?: Maybe<UserWhereUniqueInput>;
-  first?: Maybe<Scalars['Int']>;
-  last?: Maybe<Scalars['Int']>;
-  orderBy?: Maybe<UserOrderByInput>;
-  where?: Maybe<UserWhereInput>;
 };
 
 export enum Role {
@@ -136,12 +95,31 @@ export enum Role {
   USER = 'USER',
 }
 
+/** Input required for a user to signup */
 export type SignupInput = {
   email: Scalars['String'];
   password: Scalars['String'];
-  profile?: Maybe<ProfileCreateOneWithoutUserInput>;
+  profile: SignupProfileInput;
 };
 
+/** Input required for Profile Create on Signup. */
+export type SignupProfileCreateInput = {
+  firstName: Scalars['String'];
+  lastName: Scalars['String'];
+};
+
+/** Input required for Profile on Signup. */
+export type SignupProfileInput = {
+  create: SignupProfileCreateInput;
+};
+
+/** Sort direction for filtering queries (ascending or descending) */
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
+/** A way to filter string fields. Meant to pass to prisma where clause */
 export type StringFilter = {
   contains?: Maybe<Scalars['String']>;
   endsWith?: Maybe<Scalars['String']>;
@@ -151,7 +129,6 @@ export type StringFilter = {
   in?: Maybe<Array<Scalars['String']>>;
   lt?: Maybe<Scalars['String']>;
   lte?: Maybe<Scalars['String']>;
-  not?: Maybe<Scalars['String']>;
   notIn?: Maybe<Array<Scalars['String']>>;
   startsWith?: Maybe<Scalars['String']>;
 };
@@ -161,49 +138,29 @@ export type User = {
   __typename?: 'User';
   createdAt: Scalars['DateTime'];
   email?: Maybe<Scalars['String']>;
-  id: Scalars['String'];
+  id: Scalars['ID'];
   profile?: Maybe<Profile>;
   roles: Array<Role>;
   updatedAt: Scalars['DateTime'];
 };
 
-export type UserCreateInput = {
-  createdAt?: Maybe<Scalars['DateTime']>;
-  email: Scalars['String'];
-  id?: Maybe<Scalars['String']>;
-  password: Scalars['String'];
-  profile?: Maybe<ProfileCreateOneWithoutUserInput>;
-  roles?: Maybe<UserCreaterolesInput>;
-  updatedAt?: Maybe<Scalars['DateTime']>;
-};
-
-export type UserCreaterolesInput = {
-  set?: Maybe<Array<Role>>;
-};
-
+/** Order users by a specific field */
 export type UserOrderByInput = {
-  createdAt?: Maybe<OrderByArg>;
-  email?: Maybe<OrderByArg>;
-  id?: Maybe<OrderByArg>;
-  password?: Maybe<OrderByArg>;
-  updatedAt?: Maybe<OrderByArg>;
+  createdAt?: Maybe<SortOrder>;
+  email?: Maybe<SortOrder>;
+  updatedAt?: Maybe<SortOrder>;
 };
 
+/** Input to find users based other fields */
 export type UserWhereInput = {
-  AND?: Maybe<Array<UserWhereInput>>;
-  createdAt?: Maybe<DateTimeFilter>;
   email?: Maybe<StringFilter>;
-  id?: Maybe<StringFilter>;
-  NOT?: Maybe<Array<UserWhereInput>>;
-  OR?: Maybe<Array<UserWhereInput>>;
-  password?: Maybe<StringFilter>;
-  profile?: Maybe<ProfileWhereInput>;
-  updatedAt?: Maybe<DateTimeFilter>;
+  id?: Maybe<Scalars['Int']>;
 };
 
+/** Input to find users based on unique fields */
 export type UserWhereUniqueInput = {
   email?: Maybe<Scalars['String']>;
-  id?: Maybe<Scalars['String']>;
+  id?: Maybe<Scalars['ID']>;
 };
 
 export type LoginMutationVariables = Exact<{
@@ -213,6 +170,14 @@ export type LoginMutationVariables = Exact<{
 
 export type LoginMutation = { __typename?: 'Mutation' } & {
   login?: Maybe<{ __typename?: 'AuthPayload' } & Pick<AuthPayload, 'token'>>;
+};
+
+export type CreateOrganizationMutationVariables = Exact<{
+  data: OrganizationCreateInput;
+}>;
+
+export type CreateOrganizationMutation = { __typename?: 'Mutation' } & {
+  createOrganization: { __typename?: 'Organization' } & Pick<Organization, 'id' | 'name'>;
 };
 
 export type SignupMutationVariables = Exact<{
@@ -277,6 +242,55 @@ export type LoginMutationResult = ApolloReactCommon.MutationResult<LoginMutation
 export type LoginMutationOptions = ApolloReactCommon.BaseMutationOptions<
   LoginMutation,
   LoginMutationVariables
+>;
+export const CreateOrganizationDocument = gql`
+  mutation createOrganization($data: OrganizationCreateInput!) {
+    createOrganization(data: $data) {
+      id
+      name
+    }
+  }
+`;
+export type CreateOrganizationMutationFn = ApolloReactCommon.MutationFunction<
+  CreateOrganizationMutation,
+  CreateOrganizationMutationVariables
+>;
+
+/**
+ * __useCreateOrganizationMutation__
+ *
+ * To run a mutation, you first call `useCreateOrganizationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateOrganizationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createOrganizationMutation, { data, loading, error }] = useCreateOrganizationMutation({
+ *   variables: {
+ *      data: // value for 'data'
+ *   },
+ * });
+ */
+export function useCreateOrganizationMutation(
+  baseOptions?: ApolloReactHooks.MutationHookOptions<
+    CreateOrganizationMutation,
+    CreateOrganizationMutationVariables
+  >
+) {
+  return ApolloReactHooks.useMutation<
+    CreateOrganizationMutation,
+    CreateOrganizationMutationVariables
+  >(CreateOrganizationDocument, baseOptions);
+}
+
+export type CreateOrganizationMutationHookResult = ReturnType<typeof useCreateOrganizationMutation>;
+export type CreateOrganizationMutationResult =
+  ApolloReactCommon.MutationResult<CreateOrganizationMutation>;
+export type CreateOrganizationMutationOptions = ApolloReactCommon.BaseMutationOptions<
+  CreateOrganizationMutation,
+  CreateOrganizationMutationVariables
 >;
 export const SignupDocument = gql`
   mutation signup($data: SignupInput!) {

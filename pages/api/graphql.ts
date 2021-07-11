@@ -1,4 +1,5 @@
 import { ApolloServer } from 'apollo-server-micro';
+
 import { createContext } from '../../graphql/context';
 import { schema } from '../../graphql/schema';
 

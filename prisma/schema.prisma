@@ -2,10 +2,10 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 // Latest about migrations:  https://www.prisma.io/blog/prisma-migrate-ga-b5eno5g08d0b
 
-
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 generator prisma_client {
@@ -23,11 +23,21 @@ model Profile {
 }
 
 model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  password       String
+  roles          Role[]
+  profile        Profile?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+}
+
+model Organization {
   id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  roles     Role[]
-  profile   Profile?
+  name      String
+  users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

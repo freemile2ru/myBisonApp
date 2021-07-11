@@ -23,11 +23,13 @@ export const User = objectType({
     t.field('profile', {
       type: 'Profile',
       resolve: (parent, _, context) => {
-        return context.prisma.user.findUnique({
-          where: { id: parent.id }
-        }).profile()
-      }
-    })
+        return context.prisma.user
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .profile();
+      },
+    });
   },
 });
 

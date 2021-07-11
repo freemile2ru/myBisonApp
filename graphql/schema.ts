@@ -1,5 +1,6 @@
 import path from 'path';
 
+import { nexusPrisma } from 'nexus-plugin-prisma';
 import { declarativeWrappingPlugin, fieldAuthorizePlugin, makeSchema } from 'nexus';
 
 import prettierConfig from '../prettier.config';
@@ -10,7 +11,11 @@ const currentDirectory = process.cwd();
 
 export const schema = makeSchema({
   types,
-  plugins: [fieldAuthorizePlugin(), declarativeWrappingPlugin()],
+  plugins: [
+    fieldAuthorizePlugin(),
+    declarativeWrappingPlugin(),
+    nexusPrisma({ experimentalCRUD: true }),
+  ],
   outputs: {
     schema: path.join(currentDirectory, 'api.graphql'),
     typegen: path.join(currentDirectory, 'types', 'nexus.d.ts'),
