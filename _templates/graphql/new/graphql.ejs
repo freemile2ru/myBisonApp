@@ -1,0 +1,108 @@
+---
+to: graphql/modules/<%= name %>.ts
+---
+<% camelized = h.inflection.camelize(name) -%>
+<% plural = h.inflection.pluralize(camelized) -%>
+import { objectType, extendType, inputObjectType, stringArg, arg, nonNull, enumType } from 'nexus';
+import { Role } from '@prisma/client';
+import { UserInputError, /*ForbiddenError*/ } from 'apollo-server-micro';
+
+// import { isAdmin } from '../services/permissions';
+
+// <%= camelized %> Type
+export const <%= camelized %> = objectType({
+  name: '<%= camelized %>',
+  description: 'A <%= camelized %>',
+  definition(t) {
+    t.nonNull.id('id');
+    t.nonNull.date('createdAt');
+    t.nonNull.date('updatedAt');
+  },
+});
+
+// Queries
+export const <%= camelized %>Queries = extendType({
+  type: 'Query',
+  definition: (t) => {
+    // List <%= plural %> Query
+    t.list.field('<%= plural.toLowerCase() %>', {
+      type: '<%= camelized %>',
+      authorize: (_root, _args, ctx) => !!ctx.user,
+      args: nonNull(arg({ type: 'SomethingQueryInput' })),
+      description: 'Returns available <%= plural.toLowerCase() %>',
+    })
+
+    // single query
+    t.field('something', {
+      type: '<%= camelized %>',
+      description: 'Returns a specific <%= camelized %>',
+      authorize: (_root, _args, ctx) => !!ctx.user,
+      args: nonNull(arg({ type: 'SomethingQueryInput' })),
+      resolve: (_root, args, ctx) => {
+        // TODO
+      },
+    });
+  },
+});
+
+// Mutations
+export const <%= camelized %>Mutations = extendType({
+  type: 'Mutation',
+  definition: (t) => {
+    t.field('somethingMutation', {
+      type: 'String',
+      description: 'Does something',
+      args: {
+        data: nonNull(arg({ type: 'SomethingMutationInput' })),
+      },
+      authorize: (_root, _args, ctx) => !!ctx.user,
+      resolve: async (_root, args, ctx) => {
+        console.log(args.data.hello)
+        return args.data.hello
+      }
+    });
+  },
+});
+
+// Inputs
+export const SomethingMutationInput = inputObjectType({
+  name: 'SomethingMutationInput',
+  description: 'Input used to do something',
+  definition: (t) => {
+    t.nonNull.string('hello');
+  },
+})
+
+export const SomethingQueryInput = inputObjectType({
+  name: 'SomethingQueryInput',
+  description: 'Input used to do something',
+  definition: (t) => {
+    t.nonNull.string('hello');
+  },
+});
+
+export const <%= camelized %>OrderByInput = inputObjectType({
+  name: '<%= camelized %>OrderByInput',
+  description: 'Order <%= camelized.toLowerCase() %> by a specific field',
+  definition(t) {
+    t.field('hello', { type: 'SortOrder' });
+  },
+});
+
+export const UserWhereUniqueInput = inputObjectType({
+  name: 'UserWhereUniqueInput',
+  description: 'Input to find users based on unique fields',
+  definition(t) {
+    t.id('id');
+    t.email('email');
+  },
+});
+
+export const UserWhereInput = inputObjectType({
+  name: 'UserWhereInput',
+  description: 'Input to find users based other fields',
+  definition(t) {
+    t.int('id');
+    t.field('email', { type: 'StringFilter' });
+  },
+});
